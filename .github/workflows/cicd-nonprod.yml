@@ -11,3 +11,9 @@ env:
   AZURE_FUNCTIONAPP_PACKAGE_PATH: 'source/domtest'
   DOTNET_VERSION: '6.0.x'
 
+jobs:
+  build-and-deploy:
+    uses: dominicle-relativity/dom-test/.github/workflows/cicd-base.yml@main
+    with:
+      environment: dev
+      appName: "some-app"
