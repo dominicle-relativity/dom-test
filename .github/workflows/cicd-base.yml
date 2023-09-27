@@ -9,6 +9,18 @@ on:
       environment:
         required: true
         type: string
+      artifactoryKeyVaultName:
+        required: false
+        type: string
+        default: 'R1-SecIAM-GitHub'
+      dotNetVersion:
+        required: false
+        type: string
+        default: '6.0.x'
+      azureTenantId:
+        required: false
+        type: string
+        default: '8afe73f9-0d93-4821-a898-c5c2dc320953'
 
 jobs:
   build-and-deploy:
@@ -17,6 +29,27 @@ jobs:
       steps:
       - name: 'Checkout GitHub Action'
         uses: actions/checkout@v4
+
+      - name: Login to Azure service principal
+        uses: Azure/login@v1
+        with:
+          creds: '{"clientId":"${{ secrets.AZURE_CLIENT_ID }}","clientSecret":"${{ secrets.AZURE_CLIENT_SECRET }}","tenantId":"${{ inputs.azureTenantId }}"}'
+
+      - name: Setup DotNet ${{ inputs.dotNetVersion }} Environment
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: ${{ inputs.dotNetVersion }}
+
+      - name: Unregister globally available repositories from Nuget/NPM
+        uses: relativityone/build-extension/unregister-artifact-sources@main
+
+      - name: Register Nuget Artifactory
+        uses: relativityone/build-extension/artifactory-setup@main
+        with:
+            KeyVaultName: ${{inputs.artifactoryKeyVaultName}}
+            ArtifactType: 'nuget'
+            Repository: 'nuget-anthology'
+
       - name: 'Publish'
         shell: 'pwsh'
         run: |
