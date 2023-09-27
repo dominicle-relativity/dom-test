@@ -21,6 +21,11 @@ on:
         required: false
         type: string
         default: '8afe73f9-0d93-4821-a898-c5c2dc320953'
+    secrets:
+      AZURE_CLIENT_ID:
+        required: true
+      AZURE_CLIENT_SECRET:
+        required: true
 
 jobs:
   build-and-deploy:
