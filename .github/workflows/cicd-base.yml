@@ -38,7 +38,7 @@ jobs:
       - name: Login to Azure service principal
         uses: Azure/login@v1
         with:
-          creds: '{"clientId":"${{ secrets.AZURE_CLIENT_ID }}","clientSecret":"${{ secrets.AZURE_CLIENT_SECRET }}", "subscriptionId":"1a761e29-40ec-4ba8-8b66-c2599ac74c49", "tenantId":"${{ inputs.azureTenantId }}"}'
+          creds: '{"clientId":"${{ secrets.AZURE_CLIENT_ID }}","clientSecret":"${{ secrets.AZURE_CLIENT_SECRET }}", "tenantId":"${{ inputs.azureTenantId }}"}'
           allow-no-subscriptions: true
 
       - name: Setup DotNet ${{ inputs.dotNetVersion }} Environment
