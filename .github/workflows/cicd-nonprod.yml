@@ -13,7 +13,7 @@ env:
 
 jobs:
   build-and-deploy:
-    uses: dominicle-relativity/dom-test/.github/workflows/cicd-base.yml@main
+    uses: dominicle-relativity/dom-test/.github/workflows/cicd-base.yml@develop
     with:
       environment: dev
       appName: "some-app"
