@@ -40,15 +40,15 @@ jobs:
         with:
           dotnet-version: ${{ inputs.dotNetVersion }}
 
-      - name: Unregister globally available repositories from Nuget/NPM
-        uses: relativityone/build-extension/unregister-artifact-sources@main
-
-      - name: Register Nuget Artifactory
-        uses: relativityone/build-extension/artifactory-setup@main
-        with:
-            KeyVaultName: ${{inputs.artifactoryKeyVaultName}}
-            ArtifactType: 'nuget'
-            Repository: 'nuget-anthology'
+#      - name: Unregister globally available repositories from Nuget/NPM
+#        uses: relativityone/build-extension/unregister-artifact-sources@main
+#
+#      - name: Register Nuget Artifactory
+#        uses: relativityone/build-extension/artifactory-setup@main
+#        with:
+#            KeyVaultName: ${{inputs.artifactoryKeyVaultName}}
+#            ArtifactType: 'nuget'
+#            Repository: 'nuget-anthology'
 
       - name: 'Publish'
         shell: 'pwsh'
