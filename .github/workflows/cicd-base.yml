@@ -1,0 +1,21 @@
+name: CICD Base
+
+on:
+  workflow_call:
+    inputs:
+      appName:
+        required: true
+        type: string
+      environment:
+        required: true
+        type: string
+
+jobs:
+  build-and-deploy:
+      runs-on: windows-latest
+      environment: ${{ inputs.environment }}
+      steps:
+      - name: 'Publish'
+        shell: 'pwsh'
+        run: |
+          .\scripts\Promote-Artifact.ps1 -SourceStorageAccount @{} -DestinationStorageAccounts @(@{}) -BlobName 'name'

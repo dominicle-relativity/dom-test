@@ -1,0 +1,13 @@
+name: CICD Nonprod
+
+on:
+  push:
+    branches: ["develop"]
+  pull_request:
+    branches: ["develop"]
+
+env:
+  AZURE_FUNCTIONAPP_NAME: 'domtest-dev'
+  AZURE_FUNCTIONAPP_PACKAGE_PATH: 'source/domtest'
+  DOTNET_VERSION: '6.0.x'
+
