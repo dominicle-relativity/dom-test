@@ -93,7 +93,8 @@ jobs:
         shell: pwsh
         run: |
           pushd './${{ inputs.azureFunctionSolutionPath }}'
-          dotnet build --configuration Release --output ./output
+          $absolutePublishDir = $pwd.Path + '\output'
+          dotnet build --configuration Release --property:PublishDir=$absolutePublishDir
           Compress-Archive -Path "./output/*" -DestinationPath ${{ inputs.appName }}_${{ env.VERSION }}.zip -Force
           popd
 
@@ -105,7 +106,7 @@ jobs:
         run: |
           pushd './${{ inputs.azureFunctionSolutionPath }}'
           ls
-          az storage blob upload --auth-mode login --account-name cloudsecurityartifacts --container-name cloudsecurityartifacts --name ${{ inputs.appName }}_${{ env.VERSION }}.zip
+          az storage blob upload --auth-mode login --account-name cloudsecurityartifacts --container-name cloudsecurityartifacts --file ${{ inputs.appName }}_${{ env.VERSION }}.zip --name ${{ inputs.appName }}_${{ env.VERSION }}.zip --overwrite true
           popd
 
       - name: 'Publish'
