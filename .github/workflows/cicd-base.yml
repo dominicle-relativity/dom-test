@@ -94,7 +94,8 @@ jobs:
         run: |
           pushd './${{ inputs.azureFunctionSolutionPath }}'
           $absolutePublishDir = $pwd.Path + '\output'
-          dotnet build --configuration Release --property:PublishDir=$absolutePublishDir
+          Write-Host $absolutePublishDir
+          dotnet build --configuration Release --output ./output
           Compress-Archive -Path "./output/*" -DestinationPath ${{ inputs.appName }}_${{ env.VERSION }}.zip -Force
           popd
 
