@@ -1,4 +1,4 @@
-0.9.0
+0.0.2
 --------
 * [STVD-87445]: Added an endpoint to create service principals. Added support for GitHub secrets
 
