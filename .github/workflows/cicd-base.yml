@@ -42,6 +42,25 @@ jobs:
         run: |
           $version = cat version.txt
           echo "VERSION=$version" >> $env:GITHUB_ENV
+      
+      - name: 'Verify Latest Version in version.txt and changelog.md Match'
+        shell: pwsh
+        run: |
+          if(!(Test-Path changelog.md)){
+            Write-Host 'changelog.md does not exist in root directory of repo'
+            exit 1
+          }
+          $re  = '\d+\.\d+\.\d+'
+          $versions = cat .\changelog.md | Select-String -Pattern $re
+          if($versions.Matches.Count -eq 0){
+            Write-Host 'No semantic versions matching the regex $re found in changelog.md'
+            exit 1
+          }
+          $latestVersion = $versions.Matches[0].Value
+          if($latestVersion -ne ${{ env.VERSION }}){
+            Write-Host 'Latest version in changelog.md does not match version in version.txt'
+            exit 1
+          }
 
       - name : 'Check if Tag Exists'
         uses: mukunku/tag-exists-action@v1.4.0
@@ -105,7 +124,6 @@ jobs:
         shell: pwsh
         run: |
           pushd './${{ inputs.azureFunctionSolutionPath }}'
-          ls
           az storage blob upload --auth-mode login --account-name cloudsecurityartifacts --container-name cloudsecurityartifacts --file ${{ inputs.appName }}_${{ env.VERSION }}.zip --name ${{ inputs.appName }}_${{ env.VERSION }}.zip --overwrite true
           popd
 
