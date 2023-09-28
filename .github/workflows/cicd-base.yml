@@ -46,24 +46,24 @@ jobs:
         with:
           tag: ${{ env.VERSION }}
 
-      - name: 'Verify Version Bump'
-        shell: pwsh
-        run: |
-          if($${{ steps.checkTag.outputs.exists }}) {
-            Write-Host "Version needs to be bumped"
-            exit 1
-          }
-
-      - name: 'Tag Branch'
-        uses: actions/github-script@v6
-        with:
-          script: |
-            github.rest.git.createRef({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              ref: 'refs/tags/${{ env.VERSION }}',
-              sha: context.sha
-            })
+#      - name: 'Verify Version Bump'
+#        shell: pwsh
+#        run: |
+#          if($${{ steps.checkTag.outputs.exists }}) {
+#            Write-Host "Version needs to be bumped"
+#            exit 1
+#          }
+#
+#      - name: 'Tag Branch'
+#        uses: actions/github-script@v6
+#        with:
+#          script: |
+#            github.rest.git.createRef({
+#              owner: context.repo.owner,
+#              repo: context.repo.repo,
+#              ref: 'refs/tags/${{ env.VERSION }}',
+#              sha: context.sha
+#            })
 
       - name: 'Login to Azure service principal'
         uses: Azure/login@v1
@@ -91,6 +91,7 @@ jobs:
         run: |
           pushd './${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}'
           dotnet build --configuration Release --output ./output
+          ls
           Compress-Archive -Path "./output/*" -DestinationPath ${{ inputs.appName }}_${{ env.VERSION }} -Force
           popd
 
