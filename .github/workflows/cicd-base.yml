@@ -49,7 +49,7 @@ jobs:
       - name: 'Verify Version Bump'
         shell: pwsh
         run: |
-          if($${{ steps.checkTag.outputs.exists }} -eq $true) {
+          if($${{ steps.checkTag.outputs.exists }}) {
             Write-Host "Version needs to be bumped"
             exit 1
           }
