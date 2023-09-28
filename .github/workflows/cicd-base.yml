@@ -49,7 +49,7 @@ jobs:
       - name: 'Verify Version Bump'
         shell: pwsh
         run: |
-          if(${{ steps.checkTag.outputs.exists }} -eq $true) { exit 1 }
+          if(${{ steps.checkTag.outputs.exists }} -eq "true") { exit 1 }
 
       - name: 'Tag Branch'
         uses: actions/github-script@v6
