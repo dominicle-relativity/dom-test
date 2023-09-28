@@ -37,8 +37,8 @@ jobs:
 
       - name: 'Get Version'
         run: |
-          VER=$(cat VERSION)
-          echo "VERSION=$VER" >> $GITHUB_ENV
+          $version = cat version.txt
+          echo "VERSION=$version" >> $env:GITHUB_ENV
       
       - name: 'Tag Branch'
         uses: anothrNick/github-tag-action@1.67.0
