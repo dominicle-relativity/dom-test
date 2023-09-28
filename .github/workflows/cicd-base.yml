@@ -57,7 +57,7 @@ jobs:
             exit 1
           }
           $latestVersion = $versions.Matches[0].Value
-          if($latestVersion -ne ${{ env.VERSION }}){
+          if($latestVersion -ne '${{ env.VERSION }}'){
             Write-Host 'Latest version in changelog.md does not match version in version.txt'
             exit 1
           }
