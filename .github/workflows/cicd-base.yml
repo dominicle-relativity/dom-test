@@ -41,9 +41,15 @@ jobs:
           echo "VERSION=$version" >> $env:GITHUB_ENV
       
       - name: 'Tag Branch'
-        uses: anothrNick/github-tag-action@1.67.0
-        env:
-          CUSTOM_TAG: ${{ env.VERSION }}
+        uses: actions/github-script@v6
+        with:
+          script: |
+            github.rest.git.createRef({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: 'refs/tags/${{ env.VERSION }}',
+              sha: context.sha
+            })
 
       - name: 'Login to Azure service principal'
         uses: Azure/login@v1
