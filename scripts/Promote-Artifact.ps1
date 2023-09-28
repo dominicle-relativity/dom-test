@@ -22,11 +22,9 @@ Param(
 )
 Write-Host "HIT"
 exit
-Import-Module R1Ops.KeyVault
 Write-Host "Obtaining Function Key for Storage App Service..."
-Set-R1OpsAzContext -SubscriptionId "8116604c-b218-408a-b919-d2942d46b09f"
 $FunctionUri = "https://r1-storage.azurewebsites.net"
-$FunctionKey = (Get-R1OpsKeyVaultSecret -VaultName "r1-kv-storage" -Name "function-app-key").SecretValueText
+$FunctionKey = az keyvault secret show --subscription 8116604c-b218-408a-b919-d2942d46b09f --vault-name r1-kv-storage -n function-app-key --query value -o tsv
 $headers = @{
 	'x-functions-key' = $FunctionKey
 }
