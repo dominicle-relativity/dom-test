@@ -35,13 +35,23 @@ jobs:
       - name: 'Checkout GitHub Action'
         uses: actions/checkout@v4
 
-      - name: Login to Azure service principal
+      - name: 'Get Version'
+        run: |
+          VER=$(cat VERSION)
+          echo "VERSION=$VER" >> $GITHUB_ENV
+      
+      - name: 'Tag Branch'
+        uses: anothrNick/github-tag-action@1.67.0
+        env:
+          CUSTOM_TAG: ${{ env.VERSION }}
+
+      - name: 'Login to Azure service principal'
         uses: Azure/login@v1
         with:
           creds: '{"clientId":"${{ secrets.AZURE_CLIENT_ID }}","clientSecret":"${{ secrets.AZURE_CLIENT_SECRET }}", "tenantId":"${{ inputs.azureTenantId }}"}'
           allow-no-subscriptions: true
 
-      - name: Setup DotNet ${{ inputs.dotNetVersion }} Environment
+      - name: 'Setup DotNet ${{ inputs.dotNetVersion }} Environment'
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: ${{ inputs.dotNetVersion }}
@@ -55,6 +65,17 @@ jobs:
 #            KeyVaultName: ${{inputs.artifactoryKeyVaultName}}
 #            ArtifactType: 'nuget'
 #            Repository: 'nuget-anthology'
+
+      - name: 'Dotnet Build'
+        shell: pwsh
+        run: |
+          pushd './${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}'
+          dotnet build --configuration Release --output ./output
+          Compress-Archive -Path "./output/*" -DestinationPath $BlobName -Force
+          popd
+
+      - name: 'Execute unit tests'
+        run: dotnet test ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }} --filter FullyQualifiedName!~IntegrationTests
 
       - name: 'Publish'
         shell: 'pwsh'
