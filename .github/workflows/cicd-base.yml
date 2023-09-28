@@ -39,7 +39,18 @@ jobs:
         run: |
           $version = cat version.txt
           echo "VERSION=$version" >> $env:GITHUB_ENV
-      
+
+      - name : 'Check if Tag Exists'
+        uses: mukunku/tag-exists-action@v1.4.0
+        id: checkTag
+        with:
+          tag: ${{ env.VERSION }}
+
+      - name: 'Verify Version Bump'
+        shell: pwsh
+        run: |
+          if(${{ steps.checkTag.outputs.exists }} -eq $true) { exit 1 }
+
       - name: 'Tag Branch'
         uses: actions/github-script@v6
         with:
