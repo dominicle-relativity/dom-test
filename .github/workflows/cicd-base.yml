@@ -68,11 +68,11 @@ jobs:
 #              sha: context.sha
 #            })
 
-      - name: 'Login to Azure service principal'
-        uses: Azure/login@v1
-        with:
-          creds: '{"clientId":"${{ secrets.AZURE_CLIENT_ID }}","clientSecret":"${{ secrets.AZURE_CLIENT_SECRET }}", "tenantId":"${{ inputs.azureTenantId }}"}'
-          allow-no-subscriptions: true
+#      - name: 'Login to Azure service principal'
+#        uses: Azure/login@v1
+#        with:
+#          creds: '{"clientId":"${{ secrets.AZURE_CLIENT_ID }}","clientSecret":"${{ secrets.AZURE_CLIENT_SECRET }}", "tenantId":"${{ inputs.azureTenantId }}"}'
+#          allow-no-subscriptions: true
 
       - name: 'Setup DotNet ${{ inputs.dotNetVersion }} Environment'
         uses: actions/setup-dotnet@v3
@@ -92,14 +92,14 @@ jobs:
       - name: 'Dotnet Build'
         shell: pwsh
         run: |
-          pushd './${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}'
+          pushd './${{ inputs.azureFunctionSolutionPath }}'
           dotnet build --configuration Release --output ./output
           ls
           Compress-Archive -Path "./output/*" -DestinationPath ${{ inputs.appName }}_${{ env.VERSION }} -Force
           popd
 
       - name: 'Execute unit tests'
-        run: dotnet test ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }} --filter FullyQualifiedName!~IntegrationTests
+        run: dotnet test ${{ inputs.azureFunctionSolutionPath }} --filter FullyQualifiedName!~IntegrationTests
 
       - name: 'Publish'
         shell: 'pwsh'
