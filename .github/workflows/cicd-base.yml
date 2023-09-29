@@ -40,7 +40,7 @@ on:
         required: true
 
 jobs:
-  build:
+  build-test-publish-promote:
     runs-on: windows-latest
     environment: ${{ inputs.environment }}
     outputs:
@@ -112,26 +112,15 @@ jobs:
         dotnet build --configuration Release --property:OutputPath=$absolutePublishDir
         Compress-Archive -Path "./output/*" -DestinationPath ${{ inputs.appName }}_${{ env.version }}.zip -Force
         popd
-    - name: Upload Artifact to Workflow
-      uses: actions/upload-artifact@v3
-      with:
-        name: './${{ inputs.azureFunctionSolutionPath }}'
-        path: './${{ inputs.azureFunctionSolutionPath }}'
-        retention-days: 1
 
-  deploy-and-test:
-    needs: build
-    runs-on: windows-latest
-    environment: ${{ inputs.environment }}
-    steps:
+    - name: 'Execute unit tests'
+      run: dotnet test ${{ inputs.azureFunctionSolutionPath }} --filter FullyQualifiedName!~IntegrationTests
+
     - name: 'Login to Azure service principal'
       uses: Azure/login@v1
       with:
         creds: '{"clientId":"${{ secrets.AZURE_CLIENT_ID }}","clientSecret":"${{ secrets.AZURE_CLIENT_SECRET }}", "tenantId":"${{ inputs.azureTenantId }}"}'
         allow-no-subscriptions: true
-
-    - name: 'Execute unit tests'
-      run: dotnet test ${{ inputs.azureFunctionSolutionPath }} --filter FullyQualifiedName!~IntegrationTests
 
     - name: 'Run Azure Functions Action'
       uses: Azure/functions-action@v1
@@ -145,16 +134,9 @@ jobs:
     - name: Execute integration tests
       run: dotnet test ${{ inputs.azureFunctionSolutionPath }} --filter IntegrationTests
 
-  tag-branch:
-    needs: deploy-and-test
-    runs-on: windows-latest
-    if: github.event_name == 'push'
-    environment: ${{ inputs.environment }}
-    env:
-      version: ${{ needs.build.outputs.version }}
-    steps:
     - name: 'Tag Branch'
       uses: actions/github-script@v6
+      if: github.event_name == 'push'
       with:
         script: |
           github.rest.git.createRef({
@@ -164,15 +146,8 @@ jobs:
             sha: context.sha
           })
 
-  upload-build-artifact:
-    needs: deploy-and-test
-    runs-on: windows-latest
-    if: github.event_name == 'push'
-    environment: ${{ inputs.environment }}
-    env:
-      version: ${{ needs.build.outputs.version }}
-    steps:
     - name: 'Upload Build Artifact to Regression Storage Account'
+      if: github.event_name == 'push'
       shell: pwsh
       run: |
         pushd './${{ inputs.azureFunctionSolutionPath }}'
@@ -180,6 +155,7 @@ jobs:
         popd
 
     - name: 'Promote Build Artifact to All Azure Directories'
+      if: github.event_name == 'push'
       shell: 'pwsh'
       run: |
         .\scripts\Promote-Artifact.ps1 -SourceStorageAccount @{} -DestinationStorageAccounts @(@{}) -BlobName 'name'
