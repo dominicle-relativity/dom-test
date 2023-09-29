@@ -24,79 +24,71 @@ on:
         required: false
         type: string
         default: '8afe73f9-0d93-4821-a898-c5c2dc320953'
+      azureFunctionSlot:
+        required: false
+        type: string
+        default: 'production'
+      appNameSuffix:
+        required: false
+        type: string
     secrets:
       AZURE_CLIENT_ID:
         required: true
       AZURE_CLIENT_SECRET:
         required: true
+      AZURE_FUNCTION_PUBLISH_PROFILE:
+        required: true
 
 jobs:
-  build-and-deploy:
-      runs-on: windows-latest
-      environment: ${{ inputs.environment }}
-      steps:
-      - name: 'Checkout GitHub Action'
-        uses: actions/checkout@v4
+  build:
+    runs-on: windows-latest
+    environment: ${{ inputs.environment }}
+    steps:
+    - name: 'Checkout GitHub Action'
+      uses: actions/checkout@v4
 
-      - name: 'Get Version'
-        run: |
-          $version = cat version.txt
-          echo "VERSION=$version" >> $env:GITHUB_ENV
-      
-      - name: 'Verify Latest Version in version.txt and changelog.md Match'
-        shell: pwsh
-        run: |
-          if(!(Test-Path changelog.md)){
-            Write-Host 'changelog.md does not exist in root directory of repo'
-            exit 1
-          }
-          $re  = '\d+\.\d+\.\d+'
-          $versions = cat .\changelog.md | Select-String -Pattern $re
-          if($versions.Matches.Count -eq 0){
-            Write-Host 'No semantic versions matching the regex $re found in changelog.md'
-            exit 1
-          }
-          $latestVersion = $versions.Matches[0].Value
-          if($latestVersion -ne '${{ env.VERSION }}'){
-            Write-Host 'Latest version in changelog.md does not match version in version.txt'
-            exit 1
-          }
+    - name: 'Get Version'
+      run: |
+        $version = cat version.txt
+        echo "VERSION=$version" >> $env:GITHUB_ENV
+    
+    - name: 'Verify Latest Version in version.txt and changelog.md Match'
+      shell: pwsh
+      run: |
+        if(!(Test-Path changelog.md)){
+          Write-Host 'changelog.md does not exist in root directory of repo'
+          exit 1
+        }
+        $re  = '\d+\.\d+\.\d+'
+        $versions = cat .\changelog.md | Select-String -Pattern $re
+        if($versions.Matches.Count -eq 0){
+          Write-Host 'No semantic versions matching the regex $re found in changelog.md'
+          exit 1
+        }
+        $latestVersion = $versions.Matches[0].Value
+        if($latestVersion -ne '${{ env.VERSION }}'){
+          Write-Host 'Latest version in changelog.md does not match version in version.txt'
+          exit 1
+        }
 
-      - name : 'Check if Tag Exists'
-        uses: mukunku/tag-exists-action@v1.4.0
-        id: checkTag
-        with:
-          tag: ${{ env.VERSION }}
+    - name : 'Check if Tag Exists'
+      uses: mukunku/tag-exists-action@v1.4.0
+      id: checkTag
+      with:
+        tag: ${{ env.VERSION }}
 
-#      - name: 'Verify Version Bump'
-#        shell: pwsh
-#        run: |
-#          if($${{ steps.checkTag.outputs.exists }}) {
-#            Write-Host "Version needs to be bumped"
-#            exit 1
-#          }
-#
-#      - name: 'Tag Branch'
-#        uses: actions/github-script@v6
-#        with:
-#          script: |
-#            github.rest.git.createRef({
-#              owner: context.repo.owner,
-#              repo: context.repo.repo,
-#              ref: 'refs/tags/${{ env.VERSION }}',
-#              sha: context.sha
-#            })
+    - name: 'Verify Version Bump'
+      shell: pwsh
+      run: |
+        if($${{ steps.checkTag.outputs.exists }}) {
+          Write-Host "Version needs to be bumped"
+          exit 1
+        }
 
-      - name: 'Login to Azure service principal'
-        uses: Azure/login@v1
-        with:
-          creds: '{"clientId":"${{ secrets.AZURE_CLIENT_ID }}","clientSecret":"${{ secrets.AZURE_CLIENT_SECRET }}", "tenantId":"${{ inputs.azureTenantId }}"}'
-          allow-no-subscriptions: true
-
-      - name: 'Setup DotNet ${{ inputs.dotNetVersion }} Environment'
-        uses: actions/setup-dotnet@v3
-        with:
-          dotnet-version: ${{ inputs.dotNetVersion }}
+    - name: 'Setup DotNet ${{ inputs.dotNetVersion }} Environment'
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: ${{ inputs.dotNetVersion }}
 
 #      - name: Unregister globally available repositories from Nuget/NPM
 #        uses: relativityone/build-extension/unregister-artifact-sources@main
@@ -108,26 +100,69 @@ jobs:
 #            ArtifactType: 'nuget'
 #            Repository: 'nuget-anthology'
 
-      - name: 'Dotnet Build'
-        shell: pwsh
-        run: |
-          pushd './${{ inputs.azureFunctionSolutionPath }}'
-          $absolutePublishDir = $pwd.Path + '\output'
-          dotnet build --configuration Release --property:OutputPath=$absolutePublishDir
-          Compress-Archive -Path "./output/*" -DestinationPath ${{ inputs.appName }}_${{ env.VERSION }}.zip -Force
-          popd
+    - name: 'Dotnet Build'
+      shell: pwsh
+      run: |
+        pushd './${{ inputs.azureFunctionSolutionPath }}'
+        $absolutePublishDir = $pwd.Path + '\output'
+        dotnet build --configuration Release --property:OutputPath=$absolutePublishDir
+        Compress-Archive -Path "./output/*" -DestinationPath ${{ inputs.appName }}_${{ env.VERSION }}.zip -Force
+        popd
 
-      - name: 'Execute unit tests'
-        run: dotnet test ${{ inputs.azureFunctionSolutionPath }} --filter FullyQualifiedName!~IntegrationTests
+  deploy-and-test:
+    runs-on: windows-latest
+    environment: ${{ inputs.environment }}
+    steps:
+    - name: 'Login to Azure service principal'
+      uses: Azure/login@v1
+      with:
+        creds: '{"clientId":"${{ secrets.AZURE_CLIENT_ID }}","clientSecret":"${{ secrets.AZURE_CLIENT_SECRET }}", "tenantId":"${{ inputs.azureTenantId }}"}'
+        allow-no-subscriptions: true
 
-      - name: 'Upload Build Artifact to Regression Storage Account'
-        shell: pwsh
-        run: |
-          pushd './${{ inputs.azureFunctionSolutionPath }}'
-          az storage blob upload --auth-mode login --account-name cloudsecurityartifacts --container-name cloudsecurityartifacts --file ${{ inputs.appName }}_${{ env.VERSION }}.zip --name ${{ inputs.appName }}_${{ env.VERSION }}.zip --overwrite true
-          popd
+    - name: 'Execute unit tests'
+      run: dotnet test ${{ inputs.azureFunctionSolutionPath }} --filter FullyQualifiedName!~IntegrationTests
 
-      - name: 'Publish'
-        shell: 'pwsh'
-        run: |
-          .\scripts\Promote-Artifact.ps1 -SourceStorageAccount @{} -DestinationStorageAccounts @(@{}) -BlobName 'name'
+    - name: 'Run Azure Functions Action'
+      uses: Azure/functions-action@v1
+      id: fa
+      with:
+        app-name: ${{ inputs.appName }}${{ inputs.appNameSuffix}}
+        package: '${{ inputs.azureFunctionSolutionPath }}/output'
+        publish-profile: ${{ secrets.AZURE_FUNCTION_PUBLISH_PROFILE }}
+        slot-name: '${{ inputs.azureFunctionSlot }}'
+
+    - name: Execute integration tests
+      run: dotnet test ${{ inputs.azureFunctionSolutionPath }} --filter IntegrationTests
+
+  tag-branch:
+    runs-on: windows-latest
+    if: github.event_name == 'push'
+    environment: ${{ inputs.environment }}
+    steps:
+    - name: 'Tag Branch'
+      uses: actions/github-script@v6
+      with:
+        script: |
+          github.rest.git.createRef({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            ref: 'refs/tags/${{ env.VERSION }}',
+            sha: context.sha
+          })
+
+  upload-build-artifact:
+    runs-on: windows-latest
+    if: github.event_name == 'push'
+    environment: ${{ inputs.environment }}
+    steps:
+    - name: 'Upload Build Artifact to Regression Storage Account'
+      shell: pwsh
+      run: |
+        pushd './${{ inputs.azureFunctionSolutionPath }}'
+        az storage blob upload --auth-mode login --account-name cloudsecurityartifacts --container-name cloudsecurityartifacts --file ${{ inputs.appName }}_${{ env.VERSION }}.zip --name ${{ inputs.appName }}_${{ env.VERSION }}.zip --overwrite true
+        popd
+
+    - name: 'Promote Build Artifact to All Azure Directories'
+      shell: 'pwsh'
+      run: |
+        .\scripts\Promote-Artifact.ps1 -SourceStorageAccount @{} -DestinationStorageAccounts @(@{}) -BlobName 'name'
