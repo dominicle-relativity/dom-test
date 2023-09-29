@@ -66,7 +66,7 @@ do {
 	Start-Sleep -Seconds 2
 
 	try {
-		$status = (Invoke-WebRequest -Method 'POST' -Uri "$FunctionUri/api/GetTransferStatus" -Headers $headers -Body ($transfer.id | ConvertTo-Json) -ContentType 'Application/Json' -UseBasicParsing) | ConvertFrom-Json | ConvertTo-R1OpsHashtable
+		$status = (Invoke-WebRequest -Method 'POST' -Uri "$FunctionUri/api/GetTransferStatus" -Headers $headers -Body ($transfer.id | ConvertTo-Json) -ContentType 'Application/Json' -UseBasicParsing) | ConvertFrom-Json -AsHashtable
 
 		$totalBytes = 0
 		$copiedBytes = 0
