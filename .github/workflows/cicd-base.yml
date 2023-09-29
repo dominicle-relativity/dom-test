@@ -112,6 +112,12 @@ jobs:
         dotnet build --configuration Release --property:OutputPath=$absolutePublishDir
         Compress-Archive -Path "./output/*" -DestinationPath ${{ inputs.appName }}_${{ env.version }}.zip -Force
         popd
+    - name: Upload Artifact to Workflow
+      uses: actions/upload-artifact@v3
+      with:
+        name: './${{ inputs.azureFunctionSolutionPath }}'
+        path: './${{ inputs.azureFunctionSolutionPath }}'
+        retention-days: 1
 
   deploy-and-test:
     needs: build

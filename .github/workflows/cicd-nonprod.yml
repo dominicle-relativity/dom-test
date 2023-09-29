@@ -11,11 +11,11 @@ env:
   DOTNET_VERSION: '6.0.x'
 
 jobs:
-  build-and-deploy:
+  cicd:
     uses: dominicle-relativity/dom-test/.github/workflows/cicd-base.yml@develop
     with:
       environment: dev
-      appName: "some-app"
+      appName: "dom-az-function"
       azureFunctionSolutionPath: 'source/'
     secrets:
       AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
