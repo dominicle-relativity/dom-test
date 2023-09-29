@@ -3,7 +3,10 @@ name: CICD Base
 on:
   workflow_call:
     inputs:
-      appName:
+      blobNamePrefix:
+        required: true
+        type: string
+      azureFunctionName:
         required: true
         type: string
       environment:
@@ -13,9 +16,14 @@ on:
         required: true
         type: string
       artifactoryKeyVaultName:
-        required: false
+        required: true
         type: string
-        default: 'R1-SecIAM-GitHub'
+      buildArtifactStorageAccountName:
+        required: true
+        type: string
+      buildArtifactContainerName:
+        required: true
+        type: string
       dotNetVersion:
         required: false
         type: string
@@ -28,9 +36,6 @@ on:
         required: false
         type: string
         default: 'production'
-      appNameSuffix:
-        required: false
-        type: string
     secrets:
       AZURE_CLIENT_ID:
         required: true
@@ -46,17 +51,17 @@ jobs:
     outputs:
       version: ${{ steps.get_version.outputs.version }}
     steps:
-    - name: 'Checkout GitHub Action'
+    - name: Checkout GitHub Action
       uses: actions/checkout@v4
 
-    - name: 'Get Version'
+    - name: Get Version
       id: get_version
       run: |
         $version = cat version.txt
         echo "version=$version" >> $env:GITHUB_ENV
         echo "version=$version" >> $env:GITHUB_OUTPUT
     
-    - name: 'Verify Latest Version in version.txt and changelog.md Match'
+    - name: Verify Latest Version Match in version.txt and changelog.md
       shell: pwsh
       run: |
         if(!(Test-Path changelog.md)){
@@ -75,13 +80,13 @@ jobs:
           exit 1
         }
 
-    - name : 'Check if Tag Exists'
+    - name : Check if Tag Exists
       uses: mukunku/tag-exists-action@v1.4.0
       id: checkTag
       with:
         tag: ${{ env.version }}
 
-    - name: 'Verify Version Bump'
+    - name: Verify Version Bump
       shell: pwsh
       run: |
         if($${{ steps.checkTag.outputs.exists }}) {
@@ -89,7 +94,7 @@ jobs:
           exit 1
         }
 
-    - name: 'Setup DotNet ${{ inputs.dotNetVersion }} Environment'
+    - name: Setup DotNet ${{ inputs.dotNetVersion }} Environment
       uses: actions/setup-dotnet@v3
       with:
         dotnet-version: ${{ inputs.dotNetVersion }}
@@ -104,37 +109,50 @@ jobs:
 #            ArtifactType: 'nuget'
 #            Repository: 'nuget-anthology'
 
-    - name: 'Dotnet Build'
+    - name: Dotnet Build
       shell: pwsh
       run: |
         pushd './${{ inputs.azureFunctionSolutionPath }}'
         $absolutePublishDir = $pwd.Path + '\output'
         dotnet build --configuration Release --property:OutputPath=$absolutePublishDir
-        Compress-Archive -Path "./output/*" -DestinationPath ${{ inputs.appName }}_${{ env.version }}.zip -Force
+        Compress-Archive -Path "./output/*" -DestinationPath ${{ inputs.blobNamePrefix }}_${{ env.version }}.zip -Force
         popd
 
-    - name: 'Execute unit tests'
+    - name: Execute Unit Tests
       run: dotnet test ${{ inputs.azureFunctionSolutionPath }} --filter FullyQualifiedName!~IntegrationTests
 
-    - name: 'Login to Azure service principal'
+    - name: Login to Azure Service Principal
       uses: Azure/login@v1
       with:
         creds: '{"clientId":"${{ secrets.AZURE_CLIENT_ID }}","clientSecret":"${{ secrets.AZURE_CLIENT_SECRET }}", "tenantId":"${{ inputs.azureTenantId }}"}'
         allow-no-subscriptions: true
 
-    - name: 'Run Azure Functions Action'
+    - name: Run Azure Functions Action
       uses: Azure/functions-action@v1
-      id: fa
       with:
-        app-name: ${{ inputs.appName }}${{ inputs.appNameSuffix}}
+        app-name: ${{ inputs.azureFunctionName }}
         package: '${{ inputs.azureFunctionSolutionPath }}/output'
         publish-profile: ${{ secrets.AZURE_FUNCTION_PUBLISH_PROFILE }}
         slot-name: '${{ inputs.azureFunctionSlot }}'
 
-    - name: Execute integration tests
+    - name: Execute Integration Tests
       run: dotnet test ${{ inputs.azureFunctionSolutionPath }} --filter IntegrationTests
 
-    - name: 'Tag Branch'
+    - name: Upload Build Artifact to Regression Storage Account
+      if: github.event_name == 'push'
+      shell: pwsh
+      run: |
+        pushd './${{ inputs.azureFunctionSolutionPath }}'
+        az storage blob upload --auth-mode login --account-name ${{ inputs.buildArtifactStorageAccountName }} --container-name ${{ inputs.buildArtifactContainerName }} --file ${{ inputs.blobNamePrefix }}_${{ env.version }}.zip --name ${{ inputs.blobNamePrefix }}_${{ env.VERSION }}.zip --overwrite true
+        popd
+
+    - name: Promote Build Artifact to All Azure Directories
+      if: github.event_name == 'push'
+      shell: 'pwsh'
+      run: |
+        .\scripts\Promote-Artifact.ps1 -SourceStorageAccount @{} -DestinationStorageAccounts @(@{}) -BlobName 'name'
+
+    - name: Tag Branch
       uses: actions/github-script@v6
       if: github.event_name == 'push'
       with:
@@ -146,16 +164,3 @@ jobs:
             sha: context.sha
           })
 
-    - name: 'Upload Build Artifact to Regression Storage Account'
-      if: github.event_name == 'push'
-      shell: pwsh
-      run: |
-        pushd './${{ inputs.azureFunctionSolutionPath }}'
-        az storage blob upload --auth-mode login --account-name cloudsecurityartifacts --container-name cloudsecurityartifacts --file ${{ inputs.appName }}_${{ env.version }}.zip --name ${{ inputs.appName }}_${{ env.VERSION }}.zip --overwrite true
-        popd
-
-    - name: 'Promote Build Artifact to All Azure Directories'
-      if: github.event_name == 'push'
-      shell: 'pwsh'
-      run: |
-        .\scripts\Promote-Artifact.ps1 -SourceStorageAccount @{} -DestinationStorageAccounts @(@{}) -BlobName 'name'

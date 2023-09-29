@@ -15,8 +15,13 @@ jobs:
     uses: dominicle-relativity/dom-test/.github/workflows/cicd-base.yml@develop
     with:
       environment: dev
-      appName: "dom-az-function"
+      blobNamePrefix: 'dom-az-function'
+      azureFunctionName: 'dom-az-function'
       azureFunctionSolutionPath: 'source/'
+      artifactoryKeyVaultName: 'R1-SecIAM-GitHub'
+      buildArtifactStorageAccountName: 'cloudsecurityartifacts'
+      buildArtifactContainerName: 'cloudsecurityartifacts'
+      azureFunctionSlot: 'integration'
     secrets:
       AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
       AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
