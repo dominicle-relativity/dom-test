@@ -161,7 +161,7 @@ jobs:
       shell: 'pwsh'
       run: |
         pushd './${{ inputs.azureFunctionSolutionPath }}'
-        gh release crate ${{env.version}} ${{ inputs.blobNamePrefix }}_${{ env.version }}.zip
+        gh release create ${{env.version}} ${{ inputs.blobNamePrefix }}_${{ env.version }}.zip
         popd
 
     - name: Tag Branch
