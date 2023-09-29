@@ -43,14 +43,18 @@ jobs:
   build:
     runs-on: windows-latest
     environment: ${{ inputs.environment }}
+    outputs:
+      version: ${{ steps.get_version.outputs.version }}
     steps:
     - name: 'Checkout GitHub Action'
       uses: actions/checkout@v4
 
     - name: 'Get Version'
+      id: get_version
       run: |
         $version = cat version.txt
-        echo "VERSION=$version" >> $env:GITHUB_ENV
+        echo "version=$version" >> $env:GITHUB_ENV
+        echo "version=$version" >> $env:GITHUB_OUTPUT
     
     - name: 'Verify Latest Version in version.txt and changelog.md Match'
       shell: pwsh
@@ -66,7 +70,7 @@ jobs:
           exit 1
         }
         $latestVersion = $versions.Matches[0].Value
-        if($latestVersion -ne '${{ env.VERSION }}'){
+        if($latestVersion -ne '${{ env.version }}'){
           Write-Host 'Latest version in changelog.md does not match version in version.txt'
           exit 1
         }
@@ -75,7 +79,7 @@ jobs:
       uses: mukunku/tag-exists-action@v1.4.0
       id: checkTag
       with:
-        tag: ${{ env.VERSION }}
+        tag: ${{ env.version }}
 
     - name: 'Verify Version Bump'
       shell: pwsh
@@ -106,7 +110,7 @@ jobs:
         pushd './${{ inputs.azureFunctionSolutionPath }}'
         $absolutePublishDir = $pwd.Path + '\output'
         dotnet build --configuration Release --property:OutputPath=$absolutePublishDir
-        Compress-Archive -Path "./output/*" -DestinationPath ${{ inputs.appName }}_${{ env.VERSION }}.zip -Force
+        Compress-Archive -Path "./output/*" -DestinationPath ${{ inputs.appName }}_${{ env.version }}.zip -Force
         popd
 
   deploy-and-test:
@@ -140,6 +144,8 @@ jobs:
     runs-on: windows-latest
     if: github.event_name == 'push'
     environment: ${{ inputs.environment }}
+    env:
+      version: ${{ needs.build.outputs.version }}
     steps:
     - name: 'Tag Branch'
       uses: actions/github-script@v6
@@ -148,7 +154,7 @@ jobs:
           github.rest.git.createRef({
             owner: context.repo.owner,
             repo: context.repo.repo,
-            ref: 'refs/tags/${{ env.VERSION }}',
+            ref: 'refs/tags/${{ env.version }}',
             sha: context.sha
           })
 
@@ -157,12 +163,14 @@ jobs:
     runs-on: windows-latest
     if: github.event_name == 'push'
     environment: ${{ inputs.environment }}
+    env:
+      version: ${{ needs.build.outputs.version }}
     steps:
     - name: 'Upload Build Artifact to Regression Storage Account'
       shell: pwsh
       run: |
         pushd './${{ inputs.azureFunctionSolutionPath }}'
-        az storage blob upload --auth-mode login --account-name cloudsecurityartifacts --container-name cloudsecurityartifacts --file ${{ inputs.appName }}_${{ env.VERSION }}.zip --name ${{ inputs.appName }}_${{ env.VERSION }}.zip --overwrite true
+        az storage blob upload --auth-mode login --account-name cloudsecurityartifacts --container-name cloudsecurityartifacts --file ${{ inputs.appName }}_${{ env.version }}.zip --name ${{ inputs.appName }}_${{ env.VERSION }}.zip --overwrite true
         popd
 
     - name: 'Promote Build Artifact to All Azure Directories'
