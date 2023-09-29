@@ -163,6 +163,8 @@ jobs:
         pushd './${{ inputs.azureFunctionSolutionPath }}'
         gh release create ${{env.version}} ${{ inputs.blobNamePrefix }}_${{ env.version }}.zip
         popd
+      env:
+        GH_TOKEN: ${{ github.token }}
 
     - name: Tag Branch
       uses: actions/github-script@v6
