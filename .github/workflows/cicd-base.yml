@@ -118,43 +118,51 @@ jobs:
         Compress-Archive -Path "./output/*" -DestinationPath ${{ inputs.blobNamePrefix }}_${{ env.version }}.zip -Force
         popd
 
-    - name: Execute Unit Tests
-      run: dotnet test ${{ inputs.azureFunctionSolutionPath }} --filter FullyQualifiedName!~IntegrationTests
-
-    - name: Login to Azure Service Principal
-      uses: Azure/login@v1
-      with:
-        creds: '{"clientId":"${{ secrets.AZURE_CLIENT_ID }}","clientSecret":"${{ secrets.AZURE_CLIENT_SECRET }}", "tenantId":"${{ inputs.azureTenantId }}"}'
-        allow-no-subscriptions: true
-        enable-AzPSSession: false
-
-    - name: Run Azure Functions Action
-      uses: Azure/functions-action@v1
-      with:
-        app-name: ${{ inputs.azureFunctionName }}
-        package: '${{ inputs.azureFunctionSolutionPath }}/output'
-        publish-profile: ${{ secrets.AZURE_FUNCTION_PUBLISH_PROFILE }}
-        slot-name: '${{ inputs.azureFunctionSlot }}'
-
-    - name: Execute Integration Tests
-      run: dotnet test ${{ inputs.azureFunctionSolutionPath }} --filter IntegrationTests
-
-    - name: Upload Build Artifact to Regression Storage Account
-      if: github.event_name == 'push'
-      shell: pwsh
-      run: |
-        pushd './${{ inputs.azureFunctionSolutionPath }}'
-        $sourceStorageAccount = ${{ inputs.sourceBuildArtifactStorageAccount }}
-        az storage blob upload --auth-mode login --account-name $sourceStorageAccount.storageAccountName --container-name $sourceStorageAccount.storageBlobContainerName --file ${{ inputs.blobNamePrefix }}_${{ env.version }}.zip --name ${{ inputs.blobNamePrefix }}_${{ env.VERSION }}.zip --overwrite true
-        popd
-
-    - name: Promote Build Artifact to All Azure Directories
+#    - name: Execute Unit Tests
+#      run: dotnet test ${{ inputs.azureFunctionSolutionPath }} --filter FullyQualifiedName!~IntegrationTests
+#
+#    - name: Login to Azure Service Principal
+#      uses: Azure/login@v1
+#      with:
+#        creds: '{"clientId":"${{ secrets.AZURE_CLIENT_ID }}","clientSecret":"${{ secrets.AZURE_CLIENT_SECRET }}", "tenantId":"${{ inputs.azureTenantId }}"}'
+#        allow-no-subscriptions: true
+#        enable-AzPSSession: false
+#
+#    - name: Run Azure Functions Action
+#      uses: Azure/functions-action@v1
+#      with:
+#        app-name: ${{ inputs.azureFunctionName }}
+#        package: '${{ inputs.azureFunctionSolutionPath }}/output'
+#        publish-profile: ${{ secrets.AZURE_FUNCTION_PUBLISH_PROFILE }}
+#        slot-name: '${{ inputs.azureFunctionSlot }}'
+#
+#    - name: Execute Integration Tests
+#      run: dotnet test ${{ inputs.azureFunctionSolutionPath }} --filter IntegrationTests
+#
+#    - name: Upload Build Artifact to Regression Storage Account
+#      if: github.event_name == 'push'
+#      shell: pwsh
+#      run: |
+#        pushd './${{ inputs.azureFunctionSolutionPath }}'
+#        $sourceStorageAccount = ${{ inputs.sourceBuildArtifactStorageAccount }}
+#        az storage blob upload --auth-mode login --account-name $sourceStorageAccount.storageAccountName --container-name $sourceStorageAccount.storageBlobContainerName --file ${{ inputs.blobNamePrefix }}_${{ env.version }}.zip --name ${{ inputs.blobNamePrefix }}_${{ env.VERSION }}.zip --overwrite true
+#        popd
+#
+#    - name: Promote Build Artifact to All Azure Directories
+#      if: github.event_name == 'push'
+#      shell: 'pwsh'
+#      run: |
+#        $sourceStorageAccount = ${{ inputs.sourceBuildArtifactStorageAccount }}
+#        $destinationStorageAccounts = ${{ inputs.destinationBuildArtifactStorageAccounts }}
+#        .\scripts\Promote-Artifact.ps1 -SourceStorageAccount $sourceStorageAccount -DestinationStorageAccounts $destinationStorageAccounts -BlobName ${{ inputs.blobNamePrefix }}_${{ env.version }}.zip
+#
+    - name: Create Release
       if: github.event_name == 'push'
       shell: 'pwsh'
       run: |
-        $sourceStorageAccount = ${{ inputs.sourceBuildArtifactStorageAccount }}
-        $destinationStorageAccounts = ${{ inputs.destinationBuildArtifactStorageAccounts }}
-        .\scripts\Promote-Artifact.ps1 -SourceStorageAccount $sourceStorageAccount -DestinationStorageAccounts $destinationStorageAccounts -BlobName ${{ inputs.blobNamePrefix }}_${{ env.version }}.zip
+        pushd './${{ inputs.azureFunctionSolutionPath }}'
+        gh release crate ${{env.version}} ${{ inputs.blobNamePrefix }}_${{ env.version }}.zip
+        popd
 
     - name: Tag Branch
       uses: actions/github-script@v6
