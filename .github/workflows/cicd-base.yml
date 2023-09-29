@@ -18,10 +18,10 @@ on:
       artifactoryKeyVaultName:
         required: true
         type: string
-      buildArtifactStorageAccountName:
+      sourceBuildArtifactStorageAccount:
         required: true
         type: string
-      buildArtifactContainerName:
+      destinationBuildArtifactStorageAccounts:
         required: true
         type: string
       dotNetVersion:
@@ -143,14 +143,15 @@ jobs:
       shell: pwsh
       run: |
         pushd './${{ inputs.azureFunctionSolutionPath }}'
-        az storage blob upload --auth-mode login --account-name ${{ inputs.buildArtifactStorageAccountName }} --container-name ${{ inputs.buildArtifactContainerName }} --file ${{ inputs.blobNamePrefix }}_${{ env.version }}.zip --name ${{ inputs.blobNamePrefix }}_${{ env.VERSION }}.zip --overwrite true
+        $sourceStorageAccount = ${{ inputs.sourceBuildArtifactStorageAccount }}
+        az storage blob upload --auth-mode login --account-name $sourceStorageAccount.storageAccountName --container-name $sourceStorageAccount.storageBlobContainerName --file ${{ inputs.blobNamePrefix }}_${{ env.version }}.zip --name ${{ inputs.blobNamePrefix }}_${{ env.VERSION }}.zip --overwrite true
         popd
 
     - name: Promote Build Artifact to All Azure Directories
       if: github.event_name == 'push'
       shell: 'pwsh'
       run: |
-        .\scripts\Promote-Artifact.ps1 -SourceStorageAccount @{} -DestinationStorageAccounts @(@{}) -BlobName 'name'
+        .\scripts\Promote-Artifact.ps1 -SourceStorageAccount ${{ inputs.sourceBuildArtifactStorageAccount }} -DestinationStorageAccounts ${{ inputs.destinationBuildArtifactStorageAccounts }} -BlobName ${{ inputs.blobNamePrefix }}_${{ env.version }}.zip
 
     - name: Tag Branch
       uses: actions/github-script@v6

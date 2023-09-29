@@ -19,9 +19,25 @@ jobs:
       azureFunctionName: 'dom-az-function'
       azureFunctionSolutionPath: 'source/'
       artifactoryKeyVaultName: 'R1-SecIAM-GitHub'
-      buildArtifactStorageAccountName: 'cloudsecurityartifacts'
-      buildArtifactContainerName: 'cloudsecurityartifacts'
       azureFunctionSlot: 'integration'
+      sourceBuildArtifactStorageAccount: >
+        @{
+          storageBlobContainerName = "cloudsecurityartifacts";
+          storageAccountName = "cloudsecurityartifacts";
+          resourceGroupName = "Security_Resources";
+          subscriptionId = "1a761e29-40ec-4ba8-8b66-c2599ac74c49";
+          tenantId = "8afe73f9-0d93-4821-a898-c5c2dc320953"
+        }
+      destinationBuildArtifactStorageAccounts: >
+        @(
+          @{
+            storageBlobContainerName = "cloudsecprodartifacts";
+            storageAccountName = "cloudsecprodartifacts";
+            resourceGroupName = "R1-CloudSecurity";
+            subscriptionId = "c9a66f82-9d86-4d64-b0d5-eb645744dd62";
+            tenantId = "98b658f5-ca7d-43c3-8157-6554f853a01b"
+          }
+        )
     secrets:
       AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
       AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
