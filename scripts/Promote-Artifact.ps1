@@ -20,8 +20,6 @@ Param(
 	[Parameter(Mandatory=$true)]
 	[string] $BlobName
 )
-Write-Host "HIT"
-exit
 Write-Host "Obtaining Function Key for Storage App Service..."
 $FunctionUri = "https://r1-storage.azurewebsites.net"
 $FunctionKey = az keyvault secret show --subscription 8116604c-b218-408a-b919-d2942d46b09f --vault-name r1-kv-storage -n function-app-key --query value -o tsv
