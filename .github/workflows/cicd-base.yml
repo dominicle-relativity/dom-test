@@ -110,6 +110,7 @@ jobs:
         popd
 
   deploy-and-test:
+    needs: build
     runs-on: windows-latest
     environment: ${{ inputs.environment }}
     steps:
@@ -135,6 +136,7 @@ jobs:
       run: dotnet test ${{ inputs.azureFunctionSolutionPath }} --filter IntegrationTests
 
   tag-branch:
+    needs: deploy-and-test
     runs-on: windows-latest
     if: github.event_name == 'push'
     environment: ${{ inputs.environment }}
@@ -151,6 +153,7 @@ jobs:
           })
 
   upload-build-artifact:
+    needs: deploy-and-test
     runs-on: windows-latest
     if: github.event_name == 'push'
     environment: ${{ inputs.environment }}
