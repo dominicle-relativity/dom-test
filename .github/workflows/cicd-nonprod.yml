@@ -6,20 +6,16 @@ on:
   pull_request:
     branches: ["develop"]
 
-env:
-  AZURE_FUNCTIONAPP_NAME: 'dom-az-function'
-  DOTNET_VERSION: '6.0.x'
-
 jobs:
   cicd:
     uses: dominicle-relativity/dom-test/.github/workflows/cicd-base.yml@develop
     with:
-      environment: integration
+      environment: github.event_name == 'pull_request' && integration || dev
       blobNamePrefix: 'dom-az-function'
       azureFunctionName: 'dom-az-function'
       azureFunctionSolutionPath: 'source/'
       artifactoryKeyVaultName: 'R1-SecIAM-GitHub'
-      azureFunctionSlot: 'integration'
+      azureFunctionSlot: github.event_name == 'pull_request' && integration || production
       sourceBuildArtifactStorageAccount: >
         @{
           storageBlobContainerName = "cloudsecurityartifacts";
