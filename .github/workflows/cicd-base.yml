@@ -156,16 +156,6 @@ jobs:
 #        $destinationStorageAccounts = ${{ inputs.destinationBuildArtifactStorageAccounts }}
 #        .\scripts\Promote-Artifact.ps1 -SourceStorageAccount $sourceStorageAccount -DestinationStorageAccounts $destinationStorageAccounts -BlobName ${{ inputs.blobNamePrefix }}_${{ env.version }}.zip
 #
-    - name: Create Release
-      if: github.event_name == 'push'
-      shell: 'pwsh'
-      run: |
-        pushd './${{ inputs.azureFunctionSolutionPath }}'
-        gh release create ${{env.version}} ${{ inputs.blobNamePrefix }}_${{ env.version }}.zip
-        popd
-      env:
-        GH_TOKEN: ${{ github.token }}
-
     - name: Tag Branch
       uses: actions/github-script@v6
       if: github.event_name == 'push'
@@ -178,3 +168,12 @@ jobs:
             sha: context.sha
           })
 
+    - name: Create Release
+      if: github.event_name == 'push'
+      shell: 'pwsh'
+      run: |
+        pushd './${{ inputs.azureFunctionSolutionPath }}'
+        gh release create ${{env.version}} ${{ inputs.blobNamePrefix }}_${{ env.version }}.zip
+        popd
+      env:
+        GH_TOKEN: ${{ github.token }}
