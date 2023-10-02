@@ -31,7 +31,10 @@ jobs:
     outputs:
       version: ${{ steps.get_version.outputs.version }}
     steps:
-    - name: Download build asset
+    - name: Checkout Repo
+      uses: actions/checkout@v4
+
+    - name: Download Build Asset
       shell: 'pwsh'
       run: |
         gh release download ${{env.version}} -p '${{ inputs.appName }}_${{ env.version }}.zip'

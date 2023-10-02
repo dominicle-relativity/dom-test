@@ -48,7 +48,7 @@ jobs:
     outputs:
       version: ${{ steps.get_version.outputs.version }}
     steps:
-    - name: Checkout GitHub Action
+    - name: Checkout Repo
       uses: actions/checkout@v4
 
     - name: Get Version
