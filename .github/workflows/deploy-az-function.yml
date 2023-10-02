@@ -1,0 +1,32 @@
+name: Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        type: environment
+        required: true
+      version:
+        description: 'Application version to deploy'
+        type: string
+        required: true
+      deploymentSlot:
+        description: 'Deployment slot to deploy to'
+        type: string
+        required: false
+        default: 'production'
+    secrets:
+      AZURE_FUNCTION_PUBLISH_PROFILE:
+        required: true
+
+jobs:
+  deploy-az-function:
+    uses: dominicle-relativity/dom-test/.github/workflows/deploy-az-function-base.yml@develop
+    with:
+      appName: 'dom-az-function'
+      environment: ${{ inputs.environment }}
+      version: ${{ inputs.version }}
+      deploymentSlot: ${{ inputs.deploymentSlot }}
+    secrets:
+      AZURE_FUNCTION_PUBLISH_PROFILE: ${{ secrets.AZURE_FUNCTION_PUBLISH_PROFILE }}

@@ -11,8 +11,7 @@ jobs:
     uses: dominicle-relativity/dom-test/.github/workflows/cicd-base.yml@develop
     with:
       environment: ${{ github.event_name == 'pull_request' && 'integration' || 'dev' }}
-      blobNamePrefix: 'dom-az-function'
-      azureFunctionName: 'dom-az-function'
+      appName: 'dom-az-function'
       azureFunctionSolutionPath: 'source/'
       artifactoryKeyVaultName: 'R1-SecIAM-GitHub'
       azureFunctionSlot: ${{ github.event_name == 'pull_request' && 'integration' || 'production' }}

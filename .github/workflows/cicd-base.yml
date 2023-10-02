@@ -3,10 +3,7 @@ name: CICD Base
 on:
   workflow_call:
     inputs:
-      blobNamePrefix:
-        required: true
-        type: string
-      azureFunctionName:
+      appName:
         required: true
         type: string
       environment:
@@ -32,7 +29,7 @@ on:
         required: false
         type: string
         default: '8afe73f9-0d93-4821-a898-c5c2dc320953'
-      azureFunctionSlot:
+      deploymentSlot:
         required: false
         type: string
         default: 'production'
@@ -115,7 +112,7 @@ jobs:
         pushd './${{ inputs.azureFunctionSolutionPath }}'
         $absolutePublishDir = $pwd.Path + '\output'
         dotnet build --configuration Release --property:OutputPath=$absolutePublishDir
-        Compress-Archive -Path "./output/*" -DestinationPath ${{ inputs.blobNamePrefix }}_${{ env.version }}.zip -Force
+        Compress-Archive -Path "./output/*" -DestinationPath ${{ inputs.appName }}_${{ env.version }}.zip -Force
         popd
 
 #    - name: Execute Unit Tests
@@ -131,10 +128,10 @@ jobs:
 #    - name: Run Azure Functions Action
 #      uses: Azure/functions-action@v1
 #      with:
-#        app-name: ${{ inputs.azureFunctionName }}
+#        app-name: ${{ inputs.appName }}
 #        package: '${{ inputs.azureFunctionSolutionPath }}/output'
 #        publish-profile: ${{ secrets.AZURE_FUNCTION_PUBLISH_PROFILE }}
-#        slot-name: '${{ inputs.azureFunctionSlot }}'
+#        slot-name: '${{ inputs.deploymentSlot }}'
 #
 #    - name: Execute Integration Tests
 #      run: dotnet test ${{ inputs.azureFunctionSolutionPath }} --filter IntegrationTests
@@ -145,7 +142,7 @@ jobs:
 #      run: |
 #        pushd './${{ inputs.azureFunctionSolutionPath }}'
 #        $sourceStorageAccount = ${{ inputs.sourceBuildArtifactStorageAccount }}
-#        az storage blob upload --auth-mode login --account-name $sourceStorageAccount.storageAccountName --container-name $sourceStorageAccount.storageBlobContainerName --file ${{ inputs.blobNamePrefix }}_${{ env.version }}.zip --name ${{ inputs.blobNamePrefix }}_${{ env.VERSION }}.zip --overwrite true
+#        az storage blob upload --auth-mode login --account-name $sourceStorageAccount.storageAccountName --container-name $sourceStorageAccount.storageBlobContainerName --file ${{ inputs.appName }}_${{ env.version }}.zip --name ${{ inputs.appName }}_${{ env.VERSION }}.zip --overwrite true
 #        popd
 #
 #    - name: Promote Build Artifact to All Azure Directories
@@ -154,7 +151,7 @@ jobs:
 #      run: |
 #        $sourceStorageAccount = ${{ inputs.sourceBuildArtifactStorageAccount }}
 #        $destinationStorageAccounts = ${{ inputs.destinationBuildArtifactStorageAccounts }}
-#        .\scripts\Promote-Artifact.ps1 -SourceStorageAccount $sourceStorageAccount -DestinationStorageAccounts $destinationStorageAccounts -BlobName ${{ inputs.blobNamePrefix }}_${{ env.version }}.zip
+#        .\scripts\Promote-Artifact.ps1 -SourceStorageAccount $sourceStorageAccount -DestinationStorageAccounts $destinationStorageAccounts -BlobName ${{ inputs.appName }}_${{ env.version }}.zip
 #
     - name: Tag Branch
       uses: actions/github-script@v6
@@ -173,7 +170,7 @@ jobs:
       shell: 'pwsh'
       run: |
         pushd './${{ inputs.azureFunctionSolutionPath }}'
-        gh release create ${{env.version}} ${{ inputs.blobNamePrefix }}_${{ env.version }}.zip
+        gh release create ${{env.version}} ${{ inputs.appName }}_${{ env.version }}.zip
         popd
       env:
         GH_TOKEN: ${{ github.token }}

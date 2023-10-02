@@ -1,0 +1,47 @@
+name: Deploy
+
+on:
+  workflow_call:
+    inputs:
+      appName:
+        description: 'Name of the application to deploy'
+        required: true
+        type: string
+      environment:
+        description: 'Deployment environment'
+        type: string
+        required: true
+      version:
+        description: 'Application version to deploy'
+        type: string
+        required: true
+      deploymentSlot:
+        description: 'Deployment slot to deploy to'
+        type: string
+        required: false
+        default: 'production'
+    secrets:
+      AZURE_FUNCTION_PUBLISH_PROFILE:
+        required: true
+
+jobs:
+  deploy-az-function:
+    runs-on: windows-latest
+    environment: ${{ inputs.environment }}
+    outputs:
+      version: ${{ steps.get_version.outputs.version }}
+    steps:
+    - name: Download build asset
+      shell: 'pwsh'
+      run: |
+        gh release download ${{env.version}} -p '${{ inputs.appName }}_${{ env.version }}.zip'
+      env:
+        GH_TOKEN: ${{ github.token }}
+
+    - name: Run Azure Functions Action
+      uses: Azure/functions-action@v1
+      with:
+        app-name: ${{ inputs.appName }}
+        package: '${{ inputs.appName }}_${{ env.version }}.zip'
+        publish-profile: ${{ secrets.AZURE_FUNCTION_PUBLISH_PROFILE }}
+        slot-name: '${{ inputs.deploymentSlot }}'
