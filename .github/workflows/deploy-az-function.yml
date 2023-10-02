@@ -22,7 +22,7 @@ on:
 
 jobs:
   deploy-az-function:
-    uses: dominicle-relativity/dom-test/.github/workflows/deploy-az-function-base.yml@develop
+    uses: dominicle-relativity/dom-test/.github/workflows/deploy-az-function-base.yml@main
     with:
       appName: 'dom-az-function'
       environment: ${{ inputs.environment }}
