@@ -1,6 +1,6 @@
-0.0.12
+0.0.13
 --------
-* [STVD-87445]: Added an endpoint to create service principals. Added support for GitHub secrets
+* [STVD-97024]: Added GitHub actions to support the Azure Function 
 
 0.8.9
 --------
