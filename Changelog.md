@@ -1,4 +1,4 @@
-0.0.14
+0.0.15
 --------
 * [STVD-97024]: Added GitHub actions to support the Azure Function 
 
