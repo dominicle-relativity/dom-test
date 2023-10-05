@@ -35,6 +35,8 @@ on:
       AZURE_FUNCTION_PUBLISH_PROFILE:
         required: true
 
+permissions:
+  id-token: write # This is required for requesting the JWT
 jobs:
   build-test-publish-promote:
     runs-on: windows-latest
@@ -44,6 +46,14 @@ jobs:
     steps:
     - name: Checkout Repo
       uses: actions/checkout@v4
+    
+    - name: Login to Azure Service Principal
+      uses: Azure/login@v1
+      with:
+        client-id: '2b12778e-c894-4f79-bd1d-83909a25b1b4'
+        tenant-id: '8afe73f9-0d93-4821-a898-c5c2dc320953'
+        allow-no-subscriptions: true
+        enable-AzPSSession: false
 
     - name: Get Version
       id: get_version
@@ -108,14 +118,6 @@ jobs:
         dotnet build --configuration Release --property:OutputPath=$absolutePublishDir
         Compress-Archive -Path "./output/*" -DestinationPath ${{ inputs.appName }}_${{ env.version }}.zip -Force
         popd
-
-    - name: Login to Azure Service Principal
-      uses: Azure/login@v1
-      with:
-        client-id: '2b12778e-c894-4f79-bd1d-83909a25b1b4'
-        tenant-id: '8afe73f9-0d93-4821-a898-c5c2dc320953'
-        allow-no-subscriptions: true
-        enable-AzPSSession: false
 
     - name: Run Azure Functions Action
       uses: Azure/functions-action@v1
