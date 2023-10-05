@@ -1,4 +1,4 @@
-name: Deploy
+name: Deploy Azure Function Base
 
 on:
   workflow_call:
@@ -16,7 +16,7 @@ on:
         type: string
         required: true
       deploymentSlot:
-        description: 'Deployment slot to deploy to'
+        description: 'Deployment slot to deploy to. The default slot for Azure Functions is "production"'
         type: string
         required: false
         default: 'production'

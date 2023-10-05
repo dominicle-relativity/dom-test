@@ -1,4 +1,4 @@
-name: CICD Base
+name: Azure Function CICD
 
 on:
   workflow_call:
@@ -13,12 +13,6 @@ on:
         required: true
         type: string
       artifactoryKeyVaultName:
-        required: true
-        type: string
-      sourceBuildArtifactStorageAccount:
-        required: true
-        type: string
-      destinationBuildArtifactStorageAccounts:
         required: true
         type: string
       dotNetVersion:
