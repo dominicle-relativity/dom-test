@@ -39,6 +39,7 @@ jobs:
       with:
         client-id: '2b12778e-c894-4f79-bd1d-83909a25b1b4'
         tenant-id: '8afe73f9-0d93-4821-a898-c5c2dc320953'
+        subscription-id: '55d829f3-2839-483c-89dd-87f0d6bd87d0'
         enable-AzPSSession: false
 
 
