@@ -55,5 +55,4 @@ jobs:
       with:
         app-name: ${{ inputs.appName }}
         package: '${{ inputs.appName }}_${{ inputs.version }}.zip'
-        publish-profile: ${{ secrets.AZURE_FUNCTION_PUBLISH_PROFILE }}
         slot-name: '${{ inputs.deploymentSlot }}'
